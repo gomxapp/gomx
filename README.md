@@ -1,15 +1,12 @@
 # go-htmx
 
-Using Air
+### Setup
+First, install [Air](https://github.com/cosmtrek/air)
 ```bash
 go install github.com/csmtrek/air@latest
-cd go-htmx
-air
 ```
-
+Run the app in dev mode
 ```bash
 cd go-htmx
-air & ./tailwindcss -i ./client/assets/input.css -o ./client/assets/output.css --watch
+./dev.sh
 ```
-
-Make sure go/bin is in your PATH environment variable
