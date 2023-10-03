@@ -31,10 +31,10 @@ func GetItems() Items {
 	return items
 }
 
-func AddItem(newItem Item) (count int, err error) {
+func AddItem(newItem Item) (err error) {
 	if newItem.Name == "" || newItem.Price <= 0.0 {
-		return 0, errors.New(fmt.Sprintf("Invalid item data: %v", newItem))
+		return errors.New(fmt.Sprintf("Invalid item data: %v", newItem))
 	}
 	items = append(items, newItem)
-	return len(items), nil
+	return nil
 }

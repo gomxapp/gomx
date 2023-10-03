@@ -1,19 +1,20 @@
 package router
 
 import (
-	"encoding/json"
 	"fmt"
 	"go-htmx/data"
 	"html/template"
 	"log"
 	"net/http"
 	"os"
+	"strconv"
+	"strings"
 )
 
 // const clientRootDir string = "./client"
-const pagesRootDir string = "./pages"
+const pagesRootDir string = "./views"
 const otherRootDir string = pagesRootDir + "/_reserved"
-const baseTemplatePath string = "./client/index.html"
+const baseTemplatePath string = "./client/index.gohtml"
 
 func MakeHandler(isDev bool) http.Handler {
 	h := &CustomRouteHandler{
@@ -25,32 +26,43 @@ func MakeHandler(isDev bool) http.Handler {
 	h.GET("/items", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		items := data.GetItems()
 		fmt.Println(items)
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(items)
+		t := template.Must(template.ParseFiles("./views/items/_items.gohtml"))
+		w.Header().Set("Content-Type", "text/html")
+		t.Execute(w, items)
 	}))
 
 	h.POST("/items", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var newItem data.Item
-		err := json.NewDecoder(r.Body).Decode(&newItem)
+		var err error
+
+		r.ParseForm()
+		name := r.FormValue("name")
+		price, err := strconv.ParseFloat(r.FormValue("price"), 32)
 		if err != nil {
+			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusBadRequest)
 			fmt.Fprintf(w, "Error: %v", err)
 			return
 		}
-		w.Header().Set("Content-Type", "application/json")
+		newItem := data.Item{
+			Name:  name,
+			Price: float32(price),
+		}
+
+		err = data.AddItem(newItem)
+		if err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			fmt.Fprintf(w, "Error: %v", err)
+			return
+		}
+
+		items := data.GetItems()
+		item := items[len(items)-1]
+		fmt.Println(item)
+		t := template.Must(template.ParseFiles("./views/items/_items.gohtml"))
+		w.Header().Set("Content-Type", "text/html")
 		w.WriteHeader(http.StatusOK)
-		res, err := data.AddItem(newItem)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			fmt.Fprintf(w, "Error: %v", err)
-			return
-		}
-		json.NewEncoder(w).Encode(struct {
-			Count int `json:"count"`
-		}{
-			Count: res,
-		})
+		t.ExecuteTemplate(w, "item", item)
 	}))
 
 	return h
@@ -75,7 +87,8 @@ func useFileRoutes(root string, isDev bool) []route {
 
 		if entry.IsDir() {
 			routes = append(routes, useFileRoutes(filepath, isDev)...)
-		} else {
+		} else if strings.HasSuffix(entry.Name(), ".html") ||
+			strings.HasSuffix(entry.Name(), ".gohtml") {
 			t := template.Must(template.New("base").ParseFiles(
 				pagesRootDir+filepath,
 				baseTemplatePath,
