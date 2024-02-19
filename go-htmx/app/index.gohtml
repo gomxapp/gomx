@@ -1,0 +1,24 @@
+{{define "base"}}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{.PageTitle}}</title>
+  <link rel="stylesheet" href="/static/assets/output.css" />
+  <script src="https://unpkg.com/htmx.org@1.9.6"
+    integrity="sha384-FhXw7b6AlE/jyjlZH5iHa/tTe9EpJ1Y55RjcgPbjeWMskSxZt1v9qkxLJWNJaGni"
+    crossorigin="anonymous"></script>
+</head>
+
+<body class="min-h-lvh">
+  <nav class="bg-blue-800 px-6 h-10 flex flex-row items-center gap-6">
+    <a href="/" class="text-xl font-bold text-white">Home</a>
+    <a href="/foo" class="text-lg text-white">Foo</a>
+  </nav>
+  {{- template "body" . -}}
+</body>
+
+</html>
+{{end}}

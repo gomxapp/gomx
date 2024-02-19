@@ -2,76 +2,57 @@ package router
 
 import (
 	"fmt"
-	"go-htmx/data"
+	"go-htmx/config"
+	"go-htmx/util"
 	"html/template"
 	"log"
 	"net/http"
 	"os"
-	"strconv"
 	"strings"
 )
 
-// const clientRootDir string = "./client"
-const pagesRootDir string = "./views"
-const otherRootDir string = pagesRootDir + "/_reserved"
-const baseTemplatePath string = "./client/index.gohtml"
+type Router struct {
+	_routePaths []string
+	Routes      []route
+	Handler     *Handler
+}
 
-func MakeHandler(isDev bool) http.Handler {
-	h := &CustomRouteHandler{
-		routes: useFileRoutes("", isDev),
+func (r *Router) RoutePaths() []string {
+	if r._routePaths != nil {
+		return r._routePaths
 	}
+	mapped := util.SliceMap(r.Routes, func(e route) string {
+		return e.path
+	})
+	r._routePaths = mapped
+	return r._routePaths
+}
 
-	data.SeedData()
+var router *Router
 
-	h.GET("/items", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		items := data.GetItems()
-		fmt.Println(items)
-		t := template.Must(template.ParseFiles("./views/items/_items.gohtml"))
-		w.Header().Set("Content-Type", "text/html")
-		t.Execute(w, items)
-	}))
+func Create(isDev bool) *Router {
+	if router == nil {
+		router = initRouter(isDev)
+	}
+	return router
+}
 
-	h.POST("/items", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var err error
+func initRouter(isDev bool) *Router {
+	routes := useFileRoutes("", isDev)
 
-		r.ParseForm()
-		name := r.FormValue("name")
-		price, err := strconv.ParseFloat(r.FormValue("price"), 32)
-		if err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusBadRequest)
-			fmt.Fprintf(w, "Error: %v", err)
-			return
-		}
-		newItem := data.Item{
-			Name:  name,
-			Price: float32(price),
-		}
-
-		err = data.AddItem(newItem)
-		if err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusBadRequest)
-			fmt.Fprintf(w, "Error: %v", err)
-			return
-		}
-
-		items := data.GetItems()
-		item := items[len(items)-1]
-		fmt.Println(item)
-		t := template.Must(template.ParseFiles("./views/items/_items.gohtml"))
-		w.Header().Set("Content-Type", "text/html")
-		w.WriteHeader(http.StatusOK)
-		t.ExecuteTemplate(w, "item", item)
-	}))
-
-	return h
+	h := &Handler{
+		routes: routes,
+	}
+	r := &Router{
+		Handler: h,
+	}
+	return r
 }
 
 func useFileRoutes(root string, isDev bool) []route {
-	entries, err := os.ReadDir(pagesRootDir + root)
+	entries, err := os.ReadDir(config.RoutesDir + root)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalln(err)
 	}
 
 	routes := make([]route, 0)
@@ -90,8 +71,8 @@ func useFileRoutes(root string, isDev bool) []route {
 		} else if strings.HasSuffix(entry.Name(), ".html") ||
 			strings.HasSuffix(entry.Name(), ".gohtml") {
 			t := template.Must(template.New("base").ParseFiles(
-				pagesRootDir+filepath,
-				baseTemplatePath,
+				config.RoutesDir+filepath,
+				config.BaseTemplate,
 			))
 			// Check for duplicate routes
 			for _, route := range routes {
@@ -111,7 +92,7 @@ func useFileRoutes(root string, isDev bool) []route {
 				fmt.Println(r.path)
 			}
 			routes = append(routes, r)
-			// rts = r-trailing-slash
+			// rts = r with trailing-slash
 			rts := r
 			rts.path = rts.path + "/"
 			if isDev {

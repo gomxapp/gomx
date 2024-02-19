@@ -1,6 +1,6 @@
 /** @type {import('tailwindcss').Config} */
-export default {
-  content: ["./client/**/*.{html,gohtml}", "./views/**/*.{html,gohtml}"],
+module.exports = {
+  content: ["./**/*.{html,gohtml}"],
   theme: {
     extend: {},
   },

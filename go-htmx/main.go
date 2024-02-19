@@ -2,10 +2,10 @@ package main
 
 import (
 	"fmt"
+	"go-htmx/api"
+	"go-htmx/router"
 	"log"
 	"net/http"
-
-	"go-htmx/router"
 )
 
 func main() {
@@ -18,7 +18,9 @@ func startServer(isDev bool) {
 	if isDev {
 		fmt.Println("Creating route handler")
 	}
-	handler := router.MakeHandler(isDev)
+	r := router.Create(isDev)
+	handler := r.Handler
+	api.Attach(handler)
 	if isDev {
 		fmt.Println("Done")
 	}

@@ -1,6 +1,7 @@
 package router
 
 import (
+	"go-htmx/config"
 	"html/template"
 	"log"
 	"net/http"
@@ -28,8 +29,8 @@ func (tph *TemplatePageHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 func handleNotFound(w http.ResponseWriter) *TemplatePageHandler {
 	w.WriteHeader(http.StatusNotFound)
 	t := template.Must(template.New("base").ParseFiles(
-		otherRootDir+"/404.html",
-		baseTemplatePath,
+		config.ReservedDir+"/404.html",
+		config.BaseTemplate,
 	))
 	err := t.Execute(w, nil)
 	if err != nil {

@@ -1,2 +1,3 @@
-client/**/*/output.css
+app/**/*/output.css
 tmp/
+node_modules/
