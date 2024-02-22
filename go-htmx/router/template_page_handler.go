@@ -8,18 +8,14 @@ import (
 )
 
 type PageData struct {
-	PageTitle string
 }
 
 type TemplatePageHandler struct {
-	pageTitle string
-	template  *template.Template
+	template *template.Template
 }
 
 func (tph *TemplatePageHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	data := PageData{
-		PageTitle: tph.pageTitle,
-	}
+	data := PageData{}
 	err := tph.template.Execute(w, data)
 	if err != nil {
 		log.Fatal(err)
@@ -29,8 +25,8 @@ func (tph *TemplatePageHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 func handleNotFound(w http.ResponseWriter) *TemplatePageHandler {
 	w.WriteHeader(http.StatusNotFound)
 	t := template.Must(template.New("base").ParseFiles(
-		config.ReservedDir+"/404.html",
 		config.BaseTemplate,
+		config.ReservedDir+"/404.gohtml",
 	))
 	err := t.Execute(w, nil)
 	if err != nil {
@@ -38,7 +34,6 @@ func handleNotFound(w http.ResponseWriter) *TemplatePageHandler {
 	}
 
 	return &TemplatePageHandler{
-		pageTitle: "404 Page Not Found",
-		template:  t,
+		template: t,
 	}
 }

@@ -9,21 +9,18 @@ import (
 )
 
 func main() {
-	startServer(true)
+	startServer()
 }
 
-func startServer(isDev bool) {
+func startServer() {
 	var err error = nil
 
-	if isDev {
-		fmt.Println("Creating route handler")
-	}
-	r := router.Create(isDev)
+	fmt.Println("-- Creating route handler")
+	r := router.Create()
 	handler := r.Handler
+	fmt.Println("-- Done")
+
 	api.Attach(handler)
-	if isDev {
-		fmt.Println("Done")
-	}
 
 	const port = "8080"
 	fmt.Println("Listening at http://localhost:" + port)

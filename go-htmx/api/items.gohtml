@@ -1,15 +1,15 @@
-{{ block "items" . }}
-{{- range . }}
-{{- block "item" . }}
-<article
-  class="card border-2 bg-gray-100 border-gray-500 rounded shadow w-[150px]">
-  <img src="https://placehold.co/150" alt="placeholder" width="150"
-    class="w-full">
-  <div class="p-4">
-    <h3 class="text-lg font-semibold text-center">{{ .Name }}</h3>
-    <div class="mt-2 text-lg font-bold text-center">${{ .Price }}</div>
-  </div>
-</article>
-{{- end }}
-{{- end }}
-{{- end }}
+{{block "items" .}}
+    {{range .}}
+        {{block "item" .}}
+            <article
+                    class="rounded border-2 border-gray-500 bg-gray-100 shadow card w-[150px]">
+                <img src="https://placehold.co/150" alt="placeholder" width="150"
+                     class="w-full">
+                <div class="p-4">
+                    <h3 class="text-center text-lg font-semibold">{{ .Name }}</h3>
+                    <div class="mt-2 text-center text-lg font-bold">${{ .Price }}</div>
+                </div>
+            </article>
+        {{end}}
+    {{end}}
+{{end}}

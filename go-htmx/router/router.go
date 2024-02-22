@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -30,15 +31,15 @@ func (r *Router) RoutePaths() []string {
 
 var router *Router
 
-func Create(isDev bool) *Router {
+func Create() *Router {
 	if router == nil {
-		router = initRouter(isDev)
+		router = initRouter()
 	}
 	return router
 }
 
-func initRouter(isDev bool) *Router {
-	routes := useFileRoutes("", isDev)
+func initRouter() *Router {
+	routes := useFileRoutes("")
 
 	h := &Handler{
 		routes: routes,
@@ -49,7 +50,7 @@ func initRouter(isDev bool) *Router {
 	return r
 }
 
-func useFileRoutes(root string, isDev bool) []route {
+func useFileRoutes(root string) []route {
 	entries, err := os.ReadDir(config.RoutesDir + root)
 	if err != nil {
 		log.Fatalln(err)
@@ -57,49 +58,66 @@ func useFileRoutes(root string, isDev bool) []route {
 
 	routes := make([]route, 0)
 
-	for _, entry := range entries {
-		path := root
-		filepath := path + "/" + entry.Name()
+	files := make([]string, 0)
 
+	path := root
+	for _, entry := range entries {
 		// Ignore marked files
 		if entry.Name()[0] == '_' {
 			continue
 		}
 
 		if entry.IsDir() {
-			routes = append(routes, useFileRoutes(filepath, isDev)...)
-		} else if strings.HasSuffix(entry.Name(), ".html") ||
-			strings.HasSuffix(entry.Name(), ".gohtml") {
-			t := template.Must(template.New("base").ParseFiles(
-				config.RoutesDir+filepath,
-				config.BaseTemplate,
-			))
-			// Check for duplicate routes
-			for _, route := range routes {
-				if route.path == path {
-					log.Fatalf("Error parsing routes\n\tFound two files with same path: %s\n", path)
-				}
+			fp := path + "/" + entry.Name()
+			routes = append(routes, useFileRoutes(fp)...)
+		} else {
+			if strings.HasSuffix(entry.Name(), ".html") ||
+				strings.HasSuffix(entry.Name(), ".gohtml") {
+				files = append(files, entry.Name())
 			}
-			r := route{
-				path:   path,
-				method: http.MethodGet,
-				handler: &TemplatePageHandler{
-					pageTitle: "Go-HTMX",
-					template:  t,
-				},
-			}
-			if isDev {
-				fmt.Println(r.path)
-			}
-			routes = append(routes, r)
-			// rts = r with trailing-slash
-			rts := r
-			rts.path = rts.path + "/"
-			if isDev {
-				fmt.Println(rts.path)
-			}
-			routes = append(routes, rts)
 		}
 	}
+
+	if len(files) > 0 {
+		pathNoSlash := strings.Trim(root, "/")
+		rootFileIndex := -1
+		for i, file := range files {
+			if strings.HasPrefix(file, pathNoSlash) {
+				if rootFileIndex != -1 {
+					log.Fatalf("Error parsing routes\n\tAmbiguous root file. Multiple files named: %s\n", pathNoSlash)
+				}
+				rootFileIndex = i
+			}
+			files[i] = filepath.Join(config.RoutesDir, path, file)
+		}
+		if rootFileIndex == -1 {
+			log.Fatalf("Error parsing routes\n\tNo root file found.\n")
+		}
+		// move "root file" to beginning of slice
+		temp := files[0]
+		files[0] = files[rootFileIndex]
+		files[rootFileIndex] = temp
+
+		// add base template to beginning of slice
+		files = append([]string{config.BaseTemplate}, files...)
+
+		t := template.Must(template.New("base").ParseFiles(files...))
+
+		r := route{
+			path:   path,
+			method: http.MethodGet,
+			handler: &TemplatePageHandler{
+				template: t,
+			},
+		}
+		fmt.Println(r.path)
+		routes = append(routes, r)
+		// rts = r with trailing-slash
+		rts := r
+		rts.path = rts.path + "/"
+		fmt.Println(rts.path)
+		routes = append(routes, rts)
+	}
+
 	return routes
 }

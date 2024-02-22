@@ -20,10 +20,12 @@ type api struct {
 var apis []api
 
 func Attach(h *router.Handler) {
+	fmt.Println("-- Attaching API routes")
 	for _, api := range apis {
 		fmt.Println(api.path, api.method)
 		h.RegisterHandler(api.path, api.method, api.handler)
 	}
+	fmt.Println("-- Done")
 }
 
 func register(method router.RequestMethod, handler http.Handler) {
@@ -32,7 +34,6 @@ func register(method router.RequestMethod, handler http.Handler) {
 		log.Fatalln("FAIL LMAO")
 	}
 	path := getApiPath(file)
-	fmt.Println(path)
 
 	apis = append(apis, api{
 		path:    path,
