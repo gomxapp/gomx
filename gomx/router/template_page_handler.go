@@ -1,7 +1,7 @@
 package router
 
 import (
-	"go-htmx/config"
+	"github.com/winstonco/gomx/config"
 	"html/template"
 	"log"
 	"net/http"

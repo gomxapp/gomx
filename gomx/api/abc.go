@@ -1,8 +1,8 @@
 package api
 
 import (
-	"go-htmx/config"
-	"go-htmx/router"
+	"github.com/winstonco/gomx/config"
+	"github.com/winstonco/gomx/router"
 	"html/template"
 	"net/http"
 	"path/filepath"

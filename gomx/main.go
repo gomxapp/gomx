@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"go-htmx/api"
-	"go-htmx/router"
+	"github.com/winstonco/gomx/api"
+	"github.com/winstonco/gomx/router"
 	"log"
 	"net/http"
 )

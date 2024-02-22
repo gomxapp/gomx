@@ -2,8 +2,8 @@ package router
 
 import (
 	"fmt"
-	"go-htmx/config"
-	"go-htmx/util"
+	"github.com/winstonco/gomx/config"
+	"github.com/winstonco/gomx/util"
 	"html/template"
 	"log"
 	"net/http"

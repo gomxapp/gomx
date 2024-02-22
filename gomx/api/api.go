@@ -2,8 +2,8 @@ package api
 
 import (
 	"fmt"
-	"go-htmx/config"
-	"go-htmx/router"
+	"github.com/winstonco/gomx/config"
+	"github.com/winstonco/gomx/router"
 	"log"
 	"net/http"
 	"path/filepath"
