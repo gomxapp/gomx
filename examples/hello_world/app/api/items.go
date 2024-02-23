@@ -2,9 +2,10 @@ package api
 
 import (
 	"fmt"
+	"github.com/winstonco/gomx/api"
 	"github.com/winstonco/gomx/config"
-	"github.com/winstonco/gomx/data"
 	"github.com/winstonco/gomx/router"
+	"gomx.examples.hello_world/data"
 	"html/template"
 	"net/http"
 	"path/filepath"
@@ -14,32 +15,22 @@ import (
 func init() {
 	data.SeedData()
 
-	register(router.GET, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	api.Register(router.GET, func(w http.ResponseWriter, r *http.Request) {
 		items := data.GetItems()
 		fmt.Println(items)
-		t, err := template.ParseFiles(filepath.Join(config.ApiRootDir, "items.gohtml"))
-		if err != nil {
-			returnBadRequestSimple(w, err)
-			return
-		}
-		w.Header().Set("Content-Type", "text/html")
-		err = t.Execute(w, items)
-		if err != nil {
-			returnBadRequestSimple(w, err)
-			return
-		}
-	}))
+		api.ReturnHTML(w, "items.gohtml", items)
+	})
 
-	register(router.POST, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	api.Register(router.POST, func(w http.ResponseWriter, r *http.Request) {
 		err := r.ParseForm()
 		if err != nil {
-			returnBadRequestSimple(w, err)
+			api.ReturnBadRequestSimple(w, err)
 			return
 		}
 		name := r.FormValue("name")
 		price, err := strconv.ParseFloat(r.FormValue("price"), 32)
 		if err != nil {
-			returnBadRequestSimple(w, err)
+			api.ReturnBadRequestSimple(w, err)
 			return
 		}
 		newItem := data.Item{
@@ -49,7 +40,7 @@ func init() {
 
 		err = data.AddItem(newItem)
 		if err != nil {
-			returnBadRequestSimple(w, err)
+			api.ReturnBadRequestSimple(w, err)
 			return
 		}
 
@@ -58,14 +49,14 @@ func init() {
 		fmt.Println(item)
 		t, err := template.ParseFiles(filepath.Join(config.ApiRootDir, "items.gohtml"))
 		if err != nil {
-			returnBadRequestSimple(w, err)
+			api.ReturnBadRequestSimple(w, err)
 			return
 		}
 		w.Header().Set("Content-Type", "text/html")
 		w.WriteHeader(http.StatusOK)
 		err = t.ExecuteTemplate(w, "item", item)
 		if err != nil {
-			returnBadRequestSimple(w, err)
+			api.ReturnBadRequestSimple(w, err)
 		}
-	}))
+	})
 }

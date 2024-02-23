@@ -101,7 +101,10 @@ func useFileRoutes(root string) []route {
 		// add base template to beginning of slice
 		files = append([]string{config.BaseTemplate}, files...)
 
-		t := template.Must(template.New("base").ParseFiles(files...))
+		t, err := template.New("base").ParseFiles(files...)
+		if err != nil {
+			log.Fatalf("Error generating template\n\t%v\n", err)
+		}
 
 		r := route{
 			path:   path,

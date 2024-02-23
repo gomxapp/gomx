@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"fmt"
@@ -8,11 +8,7 @@ import (
 	"net/http"
 )
 
-func main() {
-	startServer()
-}
-
-func startServer() {
+func StartServer() {
 	var err error = nil
 
 	fmt.Println("-- Creating route handler")

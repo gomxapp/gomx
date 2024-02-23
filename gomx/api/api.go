@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/winstonco/gomx/config"
 	"github.com/winstonco/gomx/router"
+	"html/template"
 	"log"
 	"net/http"
 	"path/filepath"
@@ -28,7 +29,7 @@ func Attach(h *router.Handler) {
 	fmt.Println("-- Done")
 }
 
-func register(method router.RequestMethod, handler http.Handler) {
+func Register(method router.RequestMethod, handlerFunc http.HandlerFunc) {
 	_, file, _, ok := runtime.Caller(1)
 	if !ok {
 		log.Fatalln("FAIL LMAO")
@@ -38,8 +39,29 @@ func register(method router.RequestMethod, handler http.Handler) {
 	apis = append(apis, api{
 		path:    path,
 		method:  method,
-		handler: handler,
+		handler: handlerFunc,
 	})
+}
+
+func ReturnHTML(w http.ResponseWriter, file string, data any) {
+	t, err := template.ParseFiles(filepath.Join(config.ApiRootDir, file))
+	if err != nil {
+		ReturnBadRequestSimple(w, err)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html")
+	err = t.Execute(w, data)
+	if err != nil {
+		ReturnBadRequestSimple(w, err)
+		return
+	}
+}
+
+func ReturnBadRequestSimple(w http.ResponseWriter, v any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusBadRequest)
+	_, _ = fmt.Fprintf(w, "Error: %v", v)
+	fmt.Printf("Error: %v\n", v)
 }
 
 func getApiPath(fileAbsPath string) string {
@@ -57,11 +79,4 @@ func getApiPath(fileAbsPath string) string {
 	}
 	apiPath := "/" + strings.TrimSuffix(fileName, ".go")
 	return apiPath
-}
-
-func returnBadRequestSimple(w http.ResponseWriter, v any) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusBadRequest)
-	_, _ = fmt.Fprintf(w, "Error: %v", v)
-	fmt.Printf("Error: %v\n", v)
 }
