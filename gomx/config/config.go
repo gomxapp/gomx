@@ -68,7 +68,7 @@ func init() {
 	if c.ReservedDir != "" {
 		ReservedDir = c.ReservedDir
 	}
-	ReservedDir = filepath.Join(AppRootDir, RoutesDir, ReservedDir)
+	ReservedDir = filepath.Join(RoutesDir, ReservedDir)
 	ReservedDir = filepath.ToSlash(filepath.Clean(ReservedDir))
 	log.Printf("\"reserved\" = %s\n", ReservedDir)
 	if c.BaseTemplate != "" {

@@ -1,0 +1,33 @@
+{{define "base"}}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{block "title" .}}Default Title{{end}}</title>
+  <link rel="stylesheet" href="/static/assets/output.css" />
+  <script src="https://unpkg.com/htmx.org@1.9.6"
+    integrity="sha384-FhXw7b6AlE/jyjlZH5iHa/tTe9EpJ1Y55RjcgPbjeWMskSxZt1v9qkxLJWNJaGni"
+    crossorigin="anonymous"></script>
+</head>
+
+<body class="min-h-lvh bg-gray-100">
+  <nav class="bg-gray-800 px-8 py-4">
+    <div class="container mx-auto flex items-center">
+      <!-- Logo/Home Link -->
+      <a href="/" class="text-white font-bold text-lg">Home</a>
+
+      <!-- Navigation Links -->
+      <ul class="flex space-x-4 mr-auto">
+        <li>
+          <a href="/add-item" class="text-white hover:text-gray-300 px-8 py-2">Add Item</a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+  {{template "body" .}}
+</body>
+
+</html>
+{{end}}

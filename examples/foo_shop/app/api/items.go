@@ -3,12 +3,12 @@ package api
 import (
 	"fmt"
 	"github.com/winstonco/gomx/api"
-	"github.com/winstonco/gomx/config"
+	// "github.com/winstonco/gomx/config"
 	"github.com/winstonco/gomx/router"
 	"gomx.examples.hello_world/data"
-	"html/template"
+	// "html/template"
 	"net/http"
-	"path/filepath"
+	// "path/filepath"
 	"strconv"
 )
 
@@ -47,16 +47,17 @@ func init() {
 		items := data.GetItems()
 		item := items[len(items)-1]
 		fmt.Println(item)
-		t, err := template.ParseFiles(filepath.Join(config.ApiRootDir, "items.gohtml"))
-		if err != nil {
-			api.ReturnBadRequestSimple(w, err)
-			return
-		}
-		w.Header().Set("Content-Type", "text/html")
-		w.WriteHeader(http.StatusOK)
-		err = t.ExecuteTemplate(w, "item", item)
-		if err != nil {
-			api.ReturnBadRequestSimple(w, err)
-		}
+		api.ReturnHTML(w, "new-item.gohtml", item)
+		// t, err := template.ParseFiles(filepath.Join(config.ApiRootDir, "items.gohtml"))
+		// if err != nil {
+		// 	api.ReturnBadRequestSimple(w, err)
+		// 	return
+		// }
+		// w.Header().Set("Content-Type", "text/html")
+		// w.WriteHeader(http.StatusOK)
+		// err = t.ExecuteTemplate(w, "item", item)
+		// if err != nil {
+		// 	api.ReturnBadRequestSimple(w, err)
+		// }
 	})
 }
