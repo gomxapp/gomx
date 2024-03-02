@@ -1,7 +1,6 @@
 package router
 
 import (
-	"fmt"
 	"github.com/winstonco/gomx/config"
 	"github.com/winstonco/gomx/util"
 	"html/template"
@@ -113,12 +112,12 @@ func useFileRoutes(root string) []route {
 				template: t,
 			},
 		}
-		fmt.Println(r.path)
+		log.Println(r.path)
 		routes = append(routes, r)
 		// rts = r with trailing-slash
 		rts := r
 		rts.path = rts.path + "/"
-		fmt.Println(rts.path)
+		log.Println(rts.path)
 		routes = append(routes, rts)
 	}
 

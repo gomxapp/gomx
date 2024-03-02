@@ -1,15 +1,19 @@
 package api
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
-	"github.com/winstonco/gomx/config"
-	"github.com/winstonco/gomx/router"
 	"html/template"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"github.com/winstonco/gomx/config"
+	"github.com/winstonco/gomx/router"
 )
 
 type api struct {
@@ -32,7 +36,7 @@ func Attach(h *router.Handler) {
 func Register(method router.RequestMethod, handlerFunc http.HandlerFunc) {
 	_, file, _, ok := runtime.Caller(1)
 	if !ok {
-		log.Fatalln("FAIL LMAO")
+		log.Fatalln("Failed to register an API")
 	}
 	path := getApiPath(file)
 
@@ -43,25 +47,69 @@ func Register(method router.RequestMethod, handlerFunc http.HandlerFunc) {
 	})
 }
 
-func ReturnHTML(w http.ResponseWriter, file string, data any) {
-	t, err := template.ParseFiles(filepath.Join(config.ApiRootDir, file))
+func ReturnGoHTML(w http.ResponseWriter, htmlString string, data any) error {
+	t, err := template.New("temp").Parse(htmlString)
 	if err != nil {
-		ReturnBadRequestSimple(w, err)
-		return
+		return err
 	}
 	w.Header().Set("Content-Type", "text/html")
+	w.WriteHeader(http.StatusOK)
+	err = t.Execute(w, nil)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func ReturnGoHTMLFromFile(w http.ResponseWriter, file string, data any) error {
+	t, err := template.ParseFiles(filepath.Join(config.ApiRootDir, file))
+	if err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "text/html")
+	w.WriteHeader(http.StatusOK)
 	err = t.Execute(w, data)
 	if err != nil {
-		ReturnBadRequestSimple(w, err)
-		return
+		return err
 	}
+	return nil
+}
+
+func ReturnJSON(w http.ResponseWriter, jsonString string) error {
+	if !json.Valid([]byte(jsonString)) {
+		return errors.New("Invalid JSON")
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_, err := w.Write([]byte(jsonString))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func ReturnJSONFromFile(w http.ResponseWriter, file string) error {
+	data, err := os.ReadFile(filepath.Join(config.ApiRootDir, file))
+	if err != nil {
+		return err
+	}
+	if !json.Valid([]byte(data)) {
+		return errors.New("Invalid JSON")
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_, err = fmt.Fprint(w, data)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func ReturnBadRequestSimple(w http.ResponseWriter, v any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusBadRequest)
-	_, _ = fmt.Fprintf(w, "Error: %v", v)
-	fmt.Printf("Error: %v\n", v)
+	_, _ = fmt.Fprintf(w, "400 Error: %v", v)
+	fmt.Printf("400 Error: %v\n", v)
 }
 
 func getApiPath(fileAbsPath string) string {

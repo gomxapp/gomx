@@ -2,10 +2,13 @@ package api
 
 import (
 	"fmt"
+
 	"github.com/winstonco/gomx/api"
+
 	// "github.com/winstonco/gomx/config"
 	"github.com/winstonco/gomx/router"
 	"gomx.examples.hello_world/data"
+
 	// "html/template"
 	"net/http"
 	// "path/filepath"
@@ -18,7 +21,11 @@ func init() {
 	api.Register(router.GET, func(w http.ResponseWriter, r *http.Request) {
 		items := data.GetItems()
 		fmt.Println(items)
-		api.ReturnHTML(w, "items.gohtml", items)
+		err := api.ReturnGoHTMLFromFile(w, "items.gohtml", items)
+		if err != nil {
+			api.ReturnBadRequestSimple(w, nil)
+			return
+		}
 	})
 
 	api.Register(router.POST, func(w http.ResponseWriter, r *http.Request) {
@@ -47,7 +54,12 @@ func init() {
 		items := data.GetItems()
 		item := items[len(items)-1]
 		fmt.Println(item)
-		api.ReturnHTML(w, "new-item.gohtml", item)
+
+		err = api.ReturnGoHTMLFromFile(w, "new-item.gohtml", item)
+		if err != nil {
+			api.ReturnBadRequestSimple(w, nil)
+			return
+		}
 		// t, err := template.ParseFiles(filepath.Join(config.ApiRootDir, "items.gohtml"))
 		// if err != nil {
 		// 	api.ReturnBadRequestSimple(w, err)

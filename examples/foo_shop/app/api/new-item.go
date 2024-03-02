@@ -9,7 +9,6 @@ import (
 
 func init() {
 	api.Register(router.DELETE, func(w http.ResponseWriter, r *http.Request) {
-		// TODO: ReturnJSON func, ReturnHTMLString func
 		t, err := template.New("new-item").Parse("<div id=\"item-added\"></div>")
 		if err != nil {
 			api.ReturnBadRequestSimple(w, err)
