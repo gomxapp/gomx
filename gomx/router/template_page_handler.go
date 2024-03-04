@@ -1,39 +1,57 @@
 package router
 
 import (
-	"github.com/winstonco/gomx/config"
 	"html/template"
 	"log"
 	"net/http"
+
+	"github.com/winstonco/gomx/config"
 )
 
 type PageData struct {
+	Arg any
 }
 
 type TemplatePageHandler struct {
 	template *template.Template
+	data     PageData
 }
 
 func (tph *TemplatePageHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	data := PageData{}
-	err := tph.template.Execute(w, data)
+	err := tph.template.Execute(w, tph.data)
 	if err != nil {
-		log.Fatal(err)
+		internalErrorHandler(err)(w, r)
 	}
 }
 
-func handleNotFound(w http.ResponseWriter) *TemplatePageHandler {
-	w.WriteHeader(http.StatusNotFound)
-	t := template.Must(template.New("base").ParseFiles(
-		config.BaseTemplate,
-		config.ReservedDir+"/404.gohtml",
-	))
-	err := t.Execute(w, nil)
-	if err != nil {
-		log.Fatal(err)
+func internalErrorHandler(err error) http.HandlerFunc {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		t := template.Must(template.ParseFiles(
+			config.BaseTemplate,
+			config.ReservedDir+"/500.gohtml",
+		))
+		err := t.Execute(w, PageData{
+			Arg: err,
+		})
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
+	return http.HandlerFunc(fn)
+}
 
-	return &TemplatePageHandler{
-		template: t,
+func notFoundHandler() http.HandlerFunc {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		t := template.Must(template.ParseFiles(
+			config.BaseTemplate,
+			config.ReservedDir+"/404.gohtml",
+		))
+		err := t.Execute(w, nil)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
+	return http.HandlerFunc(fn)
 }

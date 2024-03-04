@@ -3,7 +3,7 @@
 <main class="px-16 py-4">
   <h1 class="mb-4 text-4xl font-bold">Add Item</h1>
   <section class="mb-4">
-    <form hx-post="/items" hx-target="#item-added" hx-swap="innerHTML" class="max-w-sm">
+    <form hx-post="/items" hx-target="#item-added" class="max-w-sm">
       <div class="mb-6 flex items-center">
         <div class="w-1/3">
           <label for="name" class="block pr-4 text-right font-bold">
@@ -38,19 +38,5 @@
     </form>
   </section>
   <div id="item-added"></div>
-  <script>
-    document.addEventListener('DOMContentLoaded', function () {
-      console.log('dom node added');
-      var closeButton = document.getElementById('closeButton');
-      var successMessage = document.getElementById('successMessage');
-
-      if (closeButton) {
-        closeButton.addEventListener('click', function () {
-          console.log('click');
-          successMessage.remove();
-        });
-      }
-    });
-  </script>
 </main>
 {{ end }}

@@ -1,75 +1,55 @@
 package api
 
 import (
-	"fmt"
+	"log"
 
-	"github.com/winstonco/gomx/api"
-
-	// "github.com/winstonco/gomx/config"
 	"github.com/winstonco/gomx/router"
 	"gomx.examples.hello_world/data"
 
-	// "html/template"
 	"net/http"
-	// "path/filepath"
 	"strconv"
 )
 
 func init() {
-	data.SeedData()
-
-	api.Register(router.GET, func(w http.ResponseWriter, r *http.Request) {
+	router.Register(router.GET, func(w http.ResponseWriter, r *http.Request) {
 		items := data.GetItems()
-		fmt.Println(items)
-		err := api.ReturnGoHTMLFromFile(w, "items.gohtml", items)
+		log.Println(items)
+		err := router.ReturnGoHTMLFromFiles(w,
+			[]string{"items.gohtml"}, "items", items)
 		if err != nil {
-			api.ReturnBadRequestSimple(w, nil)
+			router.ReturnBadRequestSimple(w, err)
 			return
 		}
 	})
 
-	api.Register(router.POST, func(w http.ResponseWriter, r *http.Request) {
+	router.Register(router.POST, func(w http.ResponseWriter, r *http.Request) {
 		err := r.ParseForm()
 		if err != nil {
-			api.ReturnBadRequestSimple(w, err)
+			router.ReturnBadRequestSimple(w, err)
 			return
 		}
 		name := r.FormValue("name")
 		price, err := strconv.ParseFloat(r.FormValue("price"), 32)
 		if err != nil {
-			api.ReturnBadRequestSimple(w, err)
+			router.ReturnBadRequestSimple(w, err)
 			return
 		}
-		newItem := data.Item{
-			Name:  name,
-			Price: float32(price),
-		}
 
-		err = data.AddItem(newItem)
+		err = data.AddItem(name, float32(price))
 		if err != nil {
-			api.ReturnBadRequestSimple(w, err)
+			router.ReturnBadRequestSimple(w, err)
 			return
 		}
 
 		items := data.GetItems()
 		item := items[len(items)-1]
-		fmt.Println(item)
+		log.Println(item)
 
-		err = api.ReturnGoHTMLFromFile(w, "new-item.gohtml", item)
+		err = router.ReturnGoHTMLFromFiles(w,
+			[]string{"new-item.gohtml"}, "new-item", item)
 		if err != nil {
-			api.ReturnBadRequestSimple(w, nil)
+			router.ReturnBadRequestSimple(w, err)
 			return
 		}
-		// t, err := template.ParseFiles(filepath.Join(config.ApiRootDir, "items.gohtml"))
-		// if err != nil {
-		// 	api.ReturnBadRequestSimple(w, err)
-		// 	return
-		// }
-		// w.Header().Set("Content-Type", "text/html")
-		// w.WriteHeader(http.StatusOK)
-		// err = t.ExecuteTemplate(w, "item", item)
-		// if err != nil {
-		// 	api.ReturnBadRequestSimple(w, err)
-		// }
 	})
 }

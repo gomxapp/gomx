@@ -1,52 +1,50 @@
 package router
 
 import (
-	"github.com/winstonco/gomx/config"
-	"github.com/winstonco/gomx/util"
+	"fmt"
 	"html/template"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/winstonco/gomx/config"
 )
 
-type Router struct {
-	_routePaths []string
-	Routes      []route
-	Handler     *Handler
+type RequestMethod string
+
+const (
+	GET     RequestMethod = http.MethodGet
+	HEAD    RequestMethod = http.MethodHead
+	POST    RequestMethod = http.MethodPost
+	PUT     RequestMethod = http.MethodPut
+	DELETE  RequestMethod = http.MethodDelete
+	CONNECT RequestMethod = http.MethodConnect
+	OPTIONS RequestMethod = http.MethodOptions
+	TRACE   RequestMethod = http.MethodTrace
+	PATCH   RequestMethod = http.MethodPatch
+)
+
+type route struct {
+	path    string
+	method  RequestMethod
+	handler http.Handler
 }
 
-func (r *Router) RoutePaths() []string {
-	if r._routePaths != nil {
-		return r._routePaths
-	}
-	mapped := util.SliceMap(r.Routes, func(e route) string {
-		return e.path
-	})
-	r._routePaths = mapped
-	return r._routePaths
+func Init(mux *http.ServeMux) {
+	log.Println("-- Creating route handler")
+	routes := initRouter(mux)
+	log.Println("-- Done")
+	log.Println("-- Attaching API routes")
+	initApi(mux)
+	log.Println("-- Done")
+	initHandler(mux, routes)
 }
 
-var router *Router
-
-func Create() *Router {
-	if router == nil {
-		router = initRouter()
-	}
-	return router
-}
-
-func initRouter() *Router {
+func initRouter(mux *http.ServeMux) []route {
 	routes := useFileRoutes("")
-
-	h := &Handler{
-		routes: routes,
-	}
-	r := &Router{
-		Handler: h,
-	}
-	return r
+	return routes
 }
 
 func useFileRoutes(root string) []route {
@@ -55,11 +53,10 @@ func useFileRoutes(root string) []route {
 		log.Fatalln(err)
 	}
 
-	routes := make([]route, 0)
+	var routes []route
 
-	files := make([]string, 0)
+	var files []string
 
-	path := root
 	for _, entry := range entries {
 		// Ignore marked files
 		if entry.Name()[0] == '_' {
@@ -67,7 +64,7 @@ func useFileRoutes(root string) []route {
 		}
 
 		if entry.IsDir() {
-			fp := path + "/" + entry.Name()
+			fp := root + "/" + entry.Name()
 			routes = append(routes, useFileRoutes(fp)...)
 		} else {
 			if strings.HasSuffix(entry.Name(), ".html") ||
@@ -87,26 +84,25 @@ func useFileRoutes(root string) []route {
 				}
 				rootFileIndex = i
 			}
-			files[i] = filepath.Join(config.RoutesDir, path, file)
+			files[i] = filepath.Join(config.RoutesDir, root, file)
 		}
-		if rootFileIndex == -1 {
-			log.Fatalf("Error parsing routes\n\tNo root file found.\n")
+		// if "root file" exists, move it to the beginning of files slice
+		if rootFileIndex != -1 {
+			temp := files[0]
+			files[0] = files[rootFileIndex]
+			files[rootFileIndex] = temp
 		}
-		// move "root file" to beginning of slice
-		temp := files[0]
-		files[0] = files[rootFileIndex]
-		files[rootFileIndex] = temp
 
 		// add base template to beginning of slice
 		files = append([]string{config.BaseTemplate}, files...)
 
-		t, err := template.New("base").ParseFiles(files...)
+		t, err := template.ParseFiles(files...)
 		if err != nil {
 			log.Fatalf("Error generating template\n\t%v\n", err)
 		}
 
 		r := route{
-			path:   path,
+			path:   root + "/",
 			method: http.MethodGet,
 			handler: &TemplatePageHandler{
 				template: t,
@@ -114,12 +110,27 @@ func useFileRoutes(root string) []route {
 		}
 		log.Println(r.path)
 		routes = append(routes, r)
-		// rts = r with trailing-slash
-		rts := r
-		rts.path = rts.path + "/"
-		log.Println(rts.path)
-		routes = append(routes, rts)
 	}
 
 	return routes
+}
+
+func initHandler(mux *http.ServeMux, routes []route) {
+	// Static files
+	fs := http.FileServer(http.Dir(config.AppRootDir + "/static"))
+	mux.Handle("GET /static/", http.StripPrefix("/static/", fs))
+
+	// Pages
+	for _, route := range routes {
+		if route.path == "" || route.path == "/" {
+			path := fmt.Sprintf("%s %s{$}", string(route.method), route.path)
+			mux.Handle(path, route.handler)
+			continue
+		}
+		path := fmt.Sprintf("%s %s", string(route.method), route.path)
+		mux.Handle(path, route.handler)
+	}
+
+	// 404
+	mux.Handle("GET /", notFoundHandler())
 }

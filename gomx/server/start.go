@@ -1,25 +1,25 @@
 package server
 
 import (
-	"fmt"
-	"github.com/winstonco/gomx/api"
-	"github.com/winstonco/gomx/router"
+	// "github.com/winstonco/gomx/api"
 	"log"
 	"net/http"
+
+	_ "github.com/winstonco/gomx/config"
+	"github.com/winstonco/gomx/router"
 )
 
-func StartServer() {
-	var err error = nil
+func Start() {
+	mux := http.NewServeMux()
 
-	fmt.Println("-- Creating route handler")
-	r := router.Create()
-	handler := r.Handler
-	fmt.Println("-- Done")
+	router.Init(mux)
 
-	api.Attach(handler)
-
-	const port = "8080"
-	fmt.Println("Listening at http://localhost:" + port)
-	err = http.ListenAndServe("localhost:"+port, handler)
+	const port = ":8080"
+	server := &http.Server{
+		Addr:    "localhost" + port,
+		Handler: mux,
+	}
+	log.Println("Listening at http://localhost" + port)
+	err := server.ListenAndServe()
 	log.Fatal(err)
 }
