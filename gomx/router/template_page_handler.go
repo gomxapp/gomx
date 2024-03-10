@@ -27,15 +27,19 @@ func (tph *TemplatePageHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 func internalErrorHandler(err error) http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
-		t := template.Must(template.ParseFiles(
+		t, err2 := template.ParseFiles(
 			config.BaseTemplate,
 			config.ReservedDir+"/500.gohtml",
-		))
-		err := t.Execute(w, PageData{
+		)
+		if err2 != nil {
+			log.Println(err2)
+			return
+		}
+		err = t.Execute(w, PageData{
 			Arg: err,
 		})
 		if err != nil {
-			log.Fatal(err)
+			log.Println(err)
 		}
 	}
 	return http.HandlerFunc(fn)
@@ -44,13 +48,17 @@ func internalErrorHandler(err error) http.HandlerFunc {
 func notFoundHandler() http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
-		t := template.Must(template.ParseFiles(
+		t, err := template.ParseFiles(
 			config.BaseTemplate,
 			config.ReservedDir+"/404.gohtml",
-		))
-		err := t.Execute(w, nil)
+		)
 		if err != nil {
-			log.Fatal(err)
+			log.Println(err)
+			return
+		}
+		err = t.Execute(w, nil)
+		if err != nil {
+			log.Println(err)
 		}
 	}
 	return http.HandlerFunc(fn)
