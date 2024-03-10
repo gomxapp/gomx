@@ -1,6 +1,6 @@
 module github.com/winstonco/gomx
 
-go 1.21
+go 1.22
 
 require (
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
