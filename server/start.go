@@ -1,7 +1,6 @@
 package server
 
 import (
-	// "github.com/winstonco/gomx/api"
 	"log"
 	"net/http"
 

@@ -5,6 +5,7 @@ import (
 	"testing"
 )
 
+// TODO
 func TestCopyExampleApp(t *testing.T) {
 	dir, err := os.MkdirTemp("", "test")
 	if err != nil {
@@ -12,7 +13,7 @@ func TestCopyExampleApp(t *testing.T) {
 	}
 	defer os.RemoveAll(dir)
 
-	err = copyExampleApp("foo_shop", dir)
+	err = initGomxApp("test")
 	if err != nil {
 		t.Fatal(err)
 	}

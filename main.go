@@ -2,11 +2,8 @@ package main
 
 import (
 	"fmt"
-	// "io"
-	// "io/fs"
 	"log"
 	"os"
-	// "path/filepath"
 
 	"github.com/urfave/cli/v2"
 )
@@ -45,12 +42,12 @@ func main() {
 	}
 }
 
-func initGomxApp(target string) error {
-	err := os.Mkdir(target, 0775)
+func initGomxApp(appName string) error {
+	err := os.Mkdir(appName, 0775)
 	if err != nil {
 		return err
 	}
-	err = os.Chdir(target)
+	err = os.Chdir(appName)
 	if err != nil {
 		return err
 	}
@@ -67,7 +64,7 @@ func initGomxApp(target string) error {
 		return nil
 	}
 	err = createFile("main.go",
-`package main
+		`package main
 
 import (
 	"github.com/winstonco/gomx/server"
@@ -78,16 +75,16 @@ func main() {
 	server.Start()
 }`)
 	if err != nil {
-	    return err
+		return err
 	}
 	err = createFile("go.mod",
-`module new_gomx_app
+		`module new_gomx_app
 
 go 1.22
 
 require github.com/winstonco/gomx`)
 	if err != nil {
-	    return err
+		return err
 	}
 	err = createFile("gomx.config.json",
 		`{
@@ -123,7 +120,7 @@ module.exports = {
 		return err
 	}
 	err = createFile("index.gohtml",
-`<!DOCTYPE html>
+		`<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -143,7 +140,7 @@ module.exports = {
 </html>
 `)
 	if err != nil {
-	    return err
+		return err
 	}
 	err = os.Mkdir("api", 0775)
 	if err != nil {
@@ -170,43 +167,4 @@ module.exports = {
 		return err
 	}
 	return nil
-	// return copyAppHelper(filepath.Join("../examples/", dir), target)
 }
-
-// func copyAppHelper(dir string, root string) error {
-// 	// log.Println(dir)
-// 	// files, err := os.ReadDir(dir)
-// 	// log.Println(files)
-// 	err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
-// 		// log.Println(path)
-// 		log.Println(path, d.Name())
-// 		if err != nil {
-// 			return err
-// 		}
-// 		if d.IsDir() {
-// 			log.Println("main.go:78 " + d.Name())
-// 			err := os.Mkdir(filepath.Join(root, d.Name()), 0775)
-// 			if err != nil {
-// 				return err
-// 			}
-// 			// return copyAppHelper(
-// 			// 	filepath.Join(dir, d.Name()),
-// 			// 	filepath.Join(root, d.Name()),
-// 			// )
-// 		}
-// 		// fIn, err := os.Open(path)
-// 		// if err != nil {
-// 		// 	return err
-// 		// }
-// 		// fOut, err := os.Create(root + d.Name())
-// 		// if err != nil {
-// 		// 	return err
-// 		// }
-// 		// _, err = io.Copy(fOut, fIn)
-// 		// if err != nil {
-// 		// 	return err
-// 		// }
-// 		return nil
-// 	})
-// 	return err
-// }
