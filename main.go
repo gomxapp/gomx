@@ -135,7 +135,11 @@ module.exports = {
 </head>
 
 <body>
-	{{block "body" .}}<h1 class="mb-4 text-4xl font-bold leading-none tracking-tight text-gray-900 md:text-5xl lg:text-6xl dark:text-white">Hello World</h1>{{end}}
+	{{block "body" .}}
+	<h1 class="mb-4 text-4xl font-bold leading-none tracking-tight text-gray-900 md:text-5xl lg:text-6xl dark:text-white">
+		Hello World
+	</h1>
+	{{end}}
 </body>
 
 </html>

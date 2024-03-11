@@ -132,5 +132,10 @@ func initHandler(mux *http.ServeMux, routes []route) {
 	}
 
 	// 404
-	mux.Handle("GET /", notFoundHandler())
+	nfh, err := notFoundHandler()
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	mux.Handle("GET /", nfh)
 }
