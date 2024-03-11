@@ -22,15 +22,18 @@ func main() {
 		},
 		{
 			Name:  "new",
-			Usage: "create a new gomx app",
+			Usage: "create a new GOMX app",
 			Action: func(ctx *cli.Context) error {
 				if ctx.Args().Len() == 0 {
 					log.Fatal("Please provide a name")
 				}
-				err := initGomxApp(ctx.Args().First())
+				appName := ctx.Args().First()
+				fmt.Println("Creating new GOMX app with name: " + appName)
+				err := initGomxApp(appName)
 				if err != nil {
 					log.Fatal(err)
 				}
+				fmt.Println("Done!")
 				return nil
 			},
 		},
@@ -78,11 +81,9 @@ func main() {
 		return err
 	}
 	err = createFile("go.mod",
-		`module new_gomx_app
+		`module `+appName+`
 
-go 1.22
-
-require github.com/winstonco/gomx`)
+go 1.22`)
 	if err != nil {
 		return err
 	}
@@ -126,7 +127,7 @@ module.exports = {
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{{block "title" .}}Default Title{{end}}</title>
+    <title>{{block "title" .}}`+appName+`{{end}}</title>
     <link rel="stylesheet" href="/static/output.css" />
     <script src="https://unpkg.com/htmx.org@1.9.6"
         integrity="sha384-FhXw7b6AlE/jyjlZH5iHa/tTe9EpJ1Y55RjcgPbjeWMskSxZt1v9qkxLJWNJaGni"
