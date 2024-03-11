@@ -1,23 +1,24 @@
 # GOMX
 
-### Setup
-First, install [Air](https://github.com/cosmtrek/air)
-```bash
-go install github.com/cosmtrek/air@latest
-```
-Run the app with Air
+GOMX, as you may have guessed, is a portmanteau of Go and HTMX. While apps are intended to be built this way, a GOMX app can do much more.
 
-The first time you run with Air, use:
-```bash
-air -c .air.toml
-```
-Afterward, you can use:
-```bash
-air
-```
-Make sure you have Tailwind v3.4.1 installed via npm
+Take a look at some [examples](https://github.com/winstonco/gomx/tree/main/examples) to see common patterns.
 
-Start the Tailwind processor
-```bash
-npx tailwindcss -i ./app/assets/input.css -o ./app/assets/output.css --watch
+## Requirements
+
+`Go v1.22`
+
+## Getting Started
+
+Install the GOMX CLI
+```sh
+go install github.com/winstonco/gomx
 ```
+Create a new GOMX app
+```sh
+gomx new <name_of_gomx_app>
+```
+
+> [!WARNING]
+> Make sure your go/bin is on your $PATH
+
