@@ -34,7 +34,7 @@ func GetItems() Items {
 	return items
 }
 
-func GetItem(id int) (Item,error){
+func GetItem(id int) (Item, error) {
 	for _, item := range items {
 		if item.Id == id {
 			return item, nil
@@ -44,17 +44,17 @@ func GetItem(id int) (Item,error){
 		Id:    -1,
 		Name:  "",
 		Price: -1.00,
-	}, errors.New(fmt.Sprintf("Item does not exist with id=%i",id))
+	}, errors.New(fmt.Sprintf("item does not exist with id=%d", id))
 }
 
 func AddItem(name string, price float32) (err error) {
 	if name == "" || price <= 0.0 {
 		return errors.New(
-			fmt.Sprintf("Invalid item data: %v", []any{name, price}))
+			fmt.Sprintf("invalid item data: %v", []any{name, price}))
 	}
 	newItem := Item{
-		Id: items[len(items) - 1].Id + 1,
-		Name: name,
+		Id:    items[len(items)-1].Id + 1,
+		Name:  name,
 		Price: price,
 	}
 	items = append(items, newItem)
