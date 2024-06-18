@@ -2,140 +2,73 @@ package router
 
 import (
 	"fmt"
-	"html/template"
-	"log"
 	"net/http"
-	"os"
-	"path/filepath"
-	"strings"
+	"path"
 
 	"github.com/winstonco/gomx/config"
 )
 
-type RequestMethod string
+// Router wraps the http.ServeMux. It matches routes using a RouteTree instance
+// which allows for more fine-grained error handling. If you are making your own
+// router, make sure to call router.Init() before passing it to the server.
+type Router struct {
+	mux *http.ServeMux
+	// RouteTree is the root of the router's route tree,
+	// which matches incoming requests. Registered APIs
+	// are added to the route tree.
+	RouteTree  *RouteTreeWrapper
+	RouteMaker RouteMaker
 
-const (
-	GET     RequestMethod = http.MethodGet
-	HEAD    RequestMethod = http.MethodHead
-	POST    RequestMethod = http.MethodPost
-	PUT     RequestMethod = http.MethodPut
-	DELETE  RequestMethod = http.MethodDelete
-	CONNECT RequestMethod = http.MethodConnect
-	OPTIONS RequestMethod = http.MethodOptions
-	TRACE   RequestMethod = http.MethodTrace
-	PATCH   RequestMethod = http.MethodPatch
-)
-
-type route struct {
-	path    string
-	method  RequestMethod
-	handler http.Handler
+	initialized bool
 }
 
-func Init(mux *http.ServeMux) {
-	log.Println("-- Creating route handler")
-	routes := initRouter(mux)
-	log.Println("-- Done")
-	log.Println("-- Attaching API routes")
-	initApi(mux)
-	log.Println("-- Done")
-	initHandler(mux, routes)
-}
-
-func initRouter(mux *http.ServeMux) []route {
-	routes := useFileRoutes("")
-	return routes
-}
-
-func useFileRoutes(root string) []route {
-	entries, err := os.ReadDir(config.RoutesDir + root)
-	if err != nil {
-		log.Fatalln(err)
+// DefaultRouter initializes and returns a Router with default settings.
+func DefaultRouter() *Router {
+	r := &Router{
+		mux:        http.NewServeMux(),
+		RouteMaker: FileBasedRouteMaker(),
+		RouteTree:  nil,
 	}
-
-	var routes []route
-
-	var files []string
-
-	for _, entry := range entries {
-		// Ignore marked files
-		if entry.Name()[0] == '_' {
-			continue
-		}
-
-		if entry.IsDir() {
-			fp := root + "/" + entry.Name()
-			routes = append(routes, useFileRoutes(fp)...)
-		} else {
-			if strings.HasSuffix(entry.Name(), ".html") ||
-				strings.HasSuffix(entry.Name(), ".gohtml") {
-				files = append(files, entry.Name())
-			}
-		}
-	}
-
-	if len(files) > 0 {
-		pathNoSlash := strings.Trim(root, "/")
-		rootFileIndex := -1
-		for i, file := range files {
-			if strings.HasPrefix(file, pathNoSlash) {
-				if rootFileIndex != -1 {
-					log.Fatalf("Error parsing routes\n\tAmbiguous root file. Multiple files named: %s\n", pathNoSlash)
-				}
-				rootFileIndex = i
-			}
-			files[i] = filepath.Join(config.RoutesDir, root, file)
-		}
-		// if "root file" exists, move it to the beginning of files slice
-		if rootFileIndex != -1 {
-			temp := files[0]
-			files[0] = files[rootFileIndex]
-			files[rootFileIndex] = temp
-		}
-
-		// add base template to beginning of slice
-		files = append([]string{config.BaseTemplate}, files...)
-
-		t, err := template.ParseFiles(files...)
-		if err != nil {
-			log.Fatalf("Error generating template\n\t%v\n", err)
-		}
-
-		r := route{
-			path:   root + "/",
-			method: http.MethodGet,
-			handler: &TemplatePageHandler{
-				template: t,
-			},
-		}
-		log.Println(r.path)
-		routes = append(routes, r)
-	}
-
-	return routes
+	r.Init()
+	return r
 }
 
-func initHandler(mux *http.ServeMux, routes []route) {
+// Init is required for all routers.
+func (router *Router) Init() {
+	fmt.Println("-- Initializing router")
+	router.RouteTree = &RouteTreeWrapper{
+		Tree: router.RouteMaker.GetRouteTree(),
+	}
+	router.initApi()
+	router.mux.HandleFunc("/", router.RouteTree.ServeNotFound)
+	fmt.Println(router.RouteTree)
+	fmt.Println("-- Done")
+	router.initialized = true
+}
+
+func (router *Router) IsInitialized() bool {
+	return router.initialized
+}
+
+// AddStaticFiles Adds an http.FileServer handler
+//
+// dir: the directory path following config.AppRootDir
+func (router *Router) AddStaticFiles(dir string) {
 	// Static files
-	fs := http.FileServer(http.Dir(config.AppRootDir + "/static"))
-	mux.Handle("GET /static/", http.StripPrefix("/static/", fs))
+	fs := http.FileServer(http.Dir(path.Join(config.AppRootDir, dir)))
+	router.mux.Handle("GET /"+dir+"/", http.StripPrefix("/"+dir+"/", fs))
+}
 
-	// Pages
-	for _, route := range routes {
-		if route.path == "" || route.path == "/" {
-			path := fmt.Sprintf("%s %s{$}", string(route.method), route.path)
-			mux.Handle(path, route.handler)
-			continue
-		}
-		path := fmt.Sprintf("%s %s", string(route.method), route.path)
-		mux.Handle(path, route.handler)
-	}
-
-	// 404
-	nfh, err := notFoundHandler()
-	if err != nil {
-		log.Println(err)
+func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	rtw := router.RouteTree
+	p := r.URL.EscapedPath()
+	method := Method(r.Method)
+	rtw.setClosestMatch(p, method)
+	rtw.setPathValues(r)
+	if rtw.matchLvl >= wildMatch && rtw.closestNode != nil && rtw.closestNode.handler != nil {
+		// if exact match found, just serve with handler
+		rtw.closestNode.handler.ServeHTTP(w, r)
 		return
 	}
-	mux.Handle("GET /", nfh)
+	router.mux.ServeHTTP(w, r)
 }

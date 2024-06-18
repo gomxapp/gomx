@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/winstonco/gomx/config"
+	"github.com/winstonco/gomx/util"
 	"html/template"
 	"log"
 	"net/http"
@@ -11,22 +13,44 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-
-	"github.com/winstonco/gomx/config"
-	"github.com/winstonco/gomx/util"
 )
 
-var apis []route
+type ApiRegisterFunc = func(tree *Router) (string, Method, http.Handler)
 
-func initApi(mux *http.ServeMux) {
-	for _, api := range apis {
-		log.Println(api.method, api.path)
-		path := fmt.Sprintf("%s %s", string(api.method), api.path)
-		mux.Handle(path, api.handler)
+var registerFuncs []ApiRegisterFunc
+
+func (router *Router) initApi() {
+	for _, registerFunc := range registerFuncs {
+		path, method, handler := registerFunc(router)
+		_, err := router.RouteTree.Tree.AddRelativeChild(path, method, handler, nil)
+		if err != nil {
+			log.Fatalln(err)
+		}
 	}
 }
 
-func Register(method RequestMethod, handlerFunc http.HandlerFunc) {
+// Register accepts an ApiRegisterFunc that returns the new API path, method, and handler.
+// The function is called during router Init with that router instance.
+func Register(registerFunc ApiRegisterFunc) {
+	registerFuncs = append(registerFuncs, registerFunc)
+}
+
+// RegisterOnPath calls Register with an ApiRegisterFunc that simply returns
+// the given path, method, and handler.
+func RegisterOnPath(path string, method Method, handler http.Handler) {
+	Register(func(tree *Router) (string, Method, http.Handler) {
+		return path, method, handler
+	})
+}
+
+// RegisterOnFile adds a new API with path = caller filename. Underscore ('_')
+// characters are replaced with a slash '/' in the path.
+//
+// Example paths:
+//
+// items.go => "/items"
+// users_{id}_comments.go => "users/{id}/comments/"
+func RegisterOnFile(method Method, handler http.Handler) {
 	_, file, _, ok := runtime.Caller(1)
 	if !ok {
 		log.Fatalln("Failed to register an API")
@@ -37,28 +61,17 @@ func Register(method RequestMethod, handlerFunc http.HandlerFunc) {
 	}
 	relPath, err := filepath.Rel(root, file)
 	if err != nil {
-		log.Fatalf("Error when creating API for file %s\n", file)
+		log.Printf("Error when creating API for file %s\n", file)
+		log.Fatalln(err)
 	}
 	fileName := filepath.ToSlash(filepath.Base(relPath))
 	if !strings.HasSuffix(fileName, ".go") {
-		log.Fatalln("Tried to register an API route from outside a Go file")
+		log.Fatalln("Tried to register an API route from outside a Go file... somehow")
 	}
 	path := "/" + strings.TrimSuffix(fileName, ".go")
 	converted := strings.ReplaceAll(path, "_", "/")
 
-	apis = append(apis, route{
-		path:    converted,
-		method:  method,
-		handler: handlerFunc,
-	})
-}
-
-func RegisterOnPath(path string, method RequestMethod, handlerFunc http.HandlerFunc) {
-	apis = append(apis, route{
-		path:    path,
-		method:  method,
-		handler: handlerFunc,
-	})
+	RegisterOnPath(converted, method, handler)
 }
 
 func ReturnGoHTML(w http.ResponseWriter, htmlString string, data any) error {
@@ -96,7 +109,7 @@ func ReturnGoHTMLFromFiles(w http.ResponseWriter, files []string, name string, d
 
 func ReturnJSON(w http.ResponseWriter, jsonString string) error {
 	if !json.Valid([]byte(jsonString)) {
-		return errors.New("Invalid JSON")
+		return errors.New("invalid JSON")
 	}
 	w.Header().Set("Content-Type", "application/json")
 	_, err := w.Write([]byte(jsonString))
@@ -112,7 +125,7 @@ func ReturnJSONFromFile(w http.ResponseWriter, file string) error {
 		return err
 	}
 	if !json.Valid([]byte(data)) {
-		return errors.New("Invalid JSON")
+		return errors.New("invalid JSON")
 	}
 	w.Header().Set("Content-Type", "application/json")
 	_, err = fmt.Fprint(w, data)
