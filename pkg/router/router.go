@@ -2,10 +2,11 @@ package router
 
 import (
 	"fmt"
+	"github.com/gomxapp/gomx/pkg/router/internal"
 	"net/http"
 	"path"
 
-	"github.com/winstonco/gomx/config"
+	"github.com/gomxapp/gomx/internal/config"
 )
 
 // Router wraps the http.ServeMux. It matches routes using a RouteTree instance
@@ -16,8 +17,8 @@ type Router struct {
 	// RouteTree is the root of the router's route tree,
 	// which matches incoming requests. Registered APIs
 	// are added to the route tree.
-	RouteTree  *RouteTreeWrapper
-	RouteMaker RouteMaker
+	routeTree  *internal.RouteTreeWrapper
+	RouteMaker internal.RouteMaker
 
 	initialized bool
 }
@@ -26,8 +27,8 @@ type Router struct {
 func DefaultRouter() *Router {
 	r := &Router{
 		mux:        http.NewServeMux(),
-		RouteMaker: FileBasedRouteMaker(),
-		RouteTree:  nil,
+		RouteMaker: internal.FileBasedRouteMaker(),
+		routeTree:  nil,
 	}
 	r.Init()
 	return r
@@ -36,12 +37,12 @@ func DefaultRouter() *Router {
 // Init is required for all routers.
 func (router *Router) Init() {
 	fmt.Println("-- Initializing router")
-	router.RouteTree = &RouteTreeWrapper{
+	router.routeTree = &internal.RouteTreeWrapper{
 		Tree: router.RouteMaker.GetRouteTree(),
 	}
 	router.initApi()
-	router.mux.HandleFunc("/", router.RouteTree.ServeNotFound)
-	fmt.Println(router.RouteTree)
+	router.mux.HandleFunc("/", router.routeTree.ServeNotFound)
+	fmt.Println(router.routeTree)
 	fmt.Println("-- Done")
 	router.initialized = true
 }
@@ -60,14 +61,8 @@ func (router *Router) AddStaticFiles(dir string) {
 }
 
 func (router *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	rtw := router.RouteTree
-	p := r.URL.EscapedPath()
-	method := Method(r.Method)
-	rtw.setClosestMatch(p, method)
-	rtw.setPathValues(r)
-	if rtw.matchLvl >= wildMatch && rtw.closestNode != nil && rtw.closestNode.handler != nil {
-		// if exact match found, just serve with handler
-		rtw.closestNode.handler.ServeHTTP(w, r)
+	if router.routeTree.ContainsExactMatch(r) {
+		router.routeTree.ServeClosestMatch(w, r)
 		return
 	}
 	router.mux.ServeHTTP(w, r)

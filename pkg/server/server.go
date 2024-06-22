@@ -3,15 +3,19 @@ package server
 import (
 	"errors"
 	"fmt"
+	"github.com/gomxapp/gomx/internal/config"
 	"net/http"
 
-	_ "github.com/winstonco/gomx/config"
-	"github.com/winstonco/gomx/router"
+	"github.com/gomxapp/gomx/pkg/router"
 )
 
 type Server struct {
 	s *http.Server
 	r *router.Router
+}
+
+func init() {
+	config.Init()
 }
 
 // NewServer initializes a new Server instance and sets server.Server.handler = server.Router.

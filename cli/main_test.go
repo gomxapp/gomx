@@ -13,7 +13,7 @@ func TestCopyExampleApp(t *testing.T) {
 	}
 	defer os.RemoveAll(dir)
 
-	err = initGomxApp("test")
+	err = newApp("test")
 	if err != nil {
 		t.Fatal(err)
 	}

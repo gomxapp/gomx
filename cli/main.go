@@ -1,51 +1,35 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"os"
-
-	"github.com/urfave/cli/v2"
 )
 
 func main() {
-	app := cli.NewApp()
+	sameDir := flag.Bool("same-dir", false, "create project in current directory")
+	flag.Parse()
 
-	app.Commands = []*cli.Command{
-		{
-			Name:  "greet",
-			Usage: "fight the loneliness!",
-			Action: func(*cli.Context) error {
-				fmt.Println("Hello friend!")
-				return nil
-			},
-		},
-		{
-			Name:  "new",
-			Usage: "create a new GOMX app",
-			Action: func(ctx *cli.Context) error {
-				if ctx.Args().Len() == 0 {
-					log.Fatal("Please provide a name")
-				}
-				appName := ctx.Args().First()
-				fmt.Println("Creating new GOMX app with name: " + appName)
-				err := initGomxApp(appName)
-				if err != nil {
-					log.Fatal(err)
-				}
-				fmt.Println("Done!")
-				return nil
-			},
-		},
-	}
+	println(*sameDir)
 
-	err := app.Run(os.Args)
-	if err != nil {
-		log.Fatal(err)
+	if flag.Arg(0) == "new" {
+		if len(flag.Args()) < 2 {
+			fmt.Println("ERROR: Please provide a name")
+			fmt.Println("Example: gomx new <app_name>")
+			return
+		}
+		err := newApp(flag.Arg(1))
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println("Done!")
 	}
 }
 
-func initGomxApp(appName string) error {
+func newApp(appName string) error {
+	fmt.Println("Creating new GOMX app with name: " + appName)
+
 	err := os.Mkdir(appName, 0775)
 	if err != nil {
 		return err
@@ -70,7 +54,7 @@ func initGomxApp(appName string) error {
 		`package main
 
 import (
-	"github.com/winstonco/gomx/server"
+	"github.com/gomxapp/gomx/server"
 	// _ "new_gomx_app/app/api"
 )
 

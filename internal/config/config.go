@@ -30,7 +30,7 @@ var DefaultConfig = Config{
 	BaseTemplate: "/index.gohtml",
 }
 
-func init() {
+func Init() {
 	data, err := os.ReadFile("gomx.config.json")
 	if err != nil {
 		fmt.Println("Error reading config file.")

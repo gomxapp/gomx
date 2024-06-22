@@ -1,7 +1,0 @@
-{
-  "appRootDir": "./app",
-  "apiRootDir": "./api",
-  "routesDir": "/routes",
-  "reservedDir": "/_",
-  "baseTemplate": "/index.gohtml"
-}
