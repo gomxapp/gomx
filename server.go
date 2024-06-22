@@ -1,17 +1,15 @@
-package server
+package gomx
 
 import (
 	"errors"
 	"fmt"
 	"github.com/gomxapp/gomx/internal/config"
 	"net/http"
-
-	"github.com/gomxapp/gomx/pkg/router"
 )
 
 type Server struct {
 	s *http.Server
-	r *router.Router
+	r *Router
 }
 
 func init() {
@@ -19,7 +17,7 @@ func init() {
 }
 
 // NewServer initializes a new Server instance and sets server.Server.handler = server.Router.
-func NewServer(s *http.Server, r *router.Router) *Server {
+func NewServer(s *http.Server, r *Router) *Server {
 	s.Handler = r
 	newServer := &Server{
 		s: s,

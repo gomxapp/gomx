@@ -1,8 +1,8 @@
-package router
+package gomx
 
 import (
 	"fmt"
-	"github.com/gomxapp/gomx/pkg/router/internal"
+	"github.com/gomxapp/gomx/internal"
 	"net/http"
 	"path"
 
