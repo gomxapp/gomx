@@ -1,4 +1,4 @@
-package router
+package gomx
 
 import (
 	"encoding/json"
@@ -15,7 +15,7 @@ import (
 	"strings"
 )
 
-type ApiRegisterFunc = func(tree *Router) (string, Method, http.Handler)
+type ApiRegisterFunc = func(tree *Router) (string, string, http.Handler)
 
 var registerFuncs []ApiRegisterFunc
 
@@ -37,8 +37,8 @@ func Register(registerFunc ApiRegisterFunc) {
 
 // RegisterOnPath calls Register with an ApiRegisterFunc that simply returns
 // the given path, method, and handler.
-func RegisterOnPath(path string, method Method, handler http.Handler) {
-	Register(func(tree *Router) (string, Method, http.Handler) {
+func RegisterOnPath(path string, method string, handler http.Handler) {
+	Register(func(tree *Router) (string, string, http.Handler) {
 		return path, method, handler
 	})
 }
@@ -50,7 +50,7 @@ func RegisterOnPath(path string, method Method, handler http.Handler) {
 //
 // items.go => "/items"
 // users_{id}_comments.go => "users/{id}/comments/"
-func RegisterOnFile(method Method, handler http.Handler) {
+func RegisterOnFile(method string, handler http.Handler) {
 	_, file, _, ok := runtime.Caller(1)
 	if !ok {
 		log.Fatalln("Failed to register an API")

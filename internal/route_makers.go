@@ -1,7 +1,6 @@
 package internal
 
 import (
-	"github.com/gomxapp/gomx/pkg/router"
 	"html/template"
 	"log"
 	"net/http"
@@ -58,7 +57,7 @@ func createFileBasedRouteTree() *RouteTree {
 				}
 			}
 		}
-		currentNode := createNode(pathSegment, router.GET, http.NotFoundHandler(), nil)
+		currentNode := createNode(pathSegment, http.MethodGet, http.NotFoundHandler(), nil)
 		// parse files to make current node
 		// if there are files to serve, create a tree node
 		rootFileIndex := -1

@@ -3,7 +3,6 @@ package internal
 import (
 	"errors"
 	"fmt"
-	"github.com/gomxapp/gomx/pkg/router"
 	"net/http"
 	"strings"
 )
@@ -34,7 +33,7 @@ func (wrapper *RouteTreeWrapper) ServeNotFound(w http.ResponseWriter, r *http.Re
 	}
 }
 
-func (wrapper *RouteTreeWrapper) setClosestMatch(path string, method router.Method) {
+func (wrapper *RouteTreeWrapper) setClosestMatch(path string, method string) {
 	wrapper.closestNode, wrapper.matchLvl = wrapper.Tree.FindClosestMatchingNode(path, method)
 }
 
@@ -56,7 +55,7 @@ func (wrapper *RouteTreeWrapper) setPathValues(r *http.Request) {
 
 func (wrapper *RouteTreeWrapper) ContainsExactMatch(request *http.Request) bool {
 	path := request.URL.EscapedPath()
-	method := router.Method(request.Method)
+	method := request.Method
 	wrapper.setClosestMatch(path, method)
 	wrapper.setPathValues(request)
 	return wrapper.matchLvl >= WildMatch && wrapper.closestNode != nil && wrapper.closestNode.handler != nil
@@ -74,7 +73,7 @@ func (wrapper *RouteTreeWrapper) String() string {
 
 type RouteTree struct {
 	pathPart        string
-	method          router.Method
+	method          string
 	handler         http.Handler
 	notFoundHandler http.Handler
 	parent          *RouteTree
@@ -87,7 +86,7 @@ func createRoot() *RouteTree {
 	return createNode("", "", nil, nil)
 }
 
-func createNode(path string, method router.Method, handler http.Handler, errorHandler http.Handler) *RouteTree {
+func createNode(path string, method string, handler http.Handler, errorHandler http.Handler) *RouteTree {
 	isWild := false
 	if strings.HasPrefix(path, wildcardPrefix) &&
 		strings.HasSuffix(path, wildcardSuffix) {
@@ -130,7 +129,7 @@ func (tree *RouteTree) Depth() int {
 
 // Go returns the child of tree with the given path part and matching method,
 // or nil if one was not found. Go takes wildcards into account.
-func (tree *RouteTree) Go(nextPathPart string, method router.Method) *RouteTree {
+func (tree *RouteTree) Go(nextPathPart string, method string) *RouteTree {
 	for _, child := range tree.children {
 		if child.method != method {
 			continue
@@ -183,7 +182,7 @@ func (tree *RouteTree) AddChild(child *RouteTree) error {
 //
 // If successful, AddRelativeChild returns child=the child with handlers and error=nil.
 // If not, child=nil.
-func (tree *RouteTree) AddRelativeChild(relPath string, method router.Method, handler http.Handler, notFoundHandler http.Handler) (*RouteTree, error) {
+func (tree *RouteTree) AddRelativeChild(relPath string, method string, handler http.Handler, notFoundHandler http.Handler) (*RouteTree, error) {
 	if tree == nil {
 		return nil, errors.New("adding to nil node")
 	}
@@ -283,7 +282,7 @@ func (tree *RouteTree) compareWithPath(targetPath string) MatchLevel {
 }
 
 // closest nodes in children in order of match level, greatest to lowest
-func (tree *RouteTree) matchCandidates(targetPathPart string, targetMethod router.Method) []*RouteTree {
+func (tree *RouteTree) matchCandidates(targetPathPart string, targetMethod string) []*RouteTree {
 	var out []*RouteTree
 	for _, child := range tree.children {
 		if child.method == targetMethod {
@@ -300,7 +299,7 @@ func (tree *RouteTree) matchCandidates(targetPathPart string, targetMethod route
 // FindClosestMatchingNode searches the tree to find the node that best matches
 // the requested path and method. It returns the closest node and a match level
 // of ExactMatch, WildMatch, or NoMatch.
-func (tree *RouteTree) FindClosestMatchingNode(targetPath string, targetMethod router.Method) (*RouteTree, MatchLevel) {
+func (tree *RouteTree) FindClosestMatchingNode(targetPath string, targetMethod string) (*RouteTree, MatchLevel) {
 	targetPath = strings.TrimRight(targetPath, "/")
 	targetParts := strings.Split(targetPath, "/")
 	var helper func(int, *RouteTree, bool) (int, *RouteTree, bool)
@@ -338,7 +337,7 @@ func (tree *RouteTree) FindClosestMatchingNode(targetPath string, targetMethod r
 // Deprecated:
 // FindClosestMatchingNode breadth-first searches the tree for the closest matching node.
 // It returns the closest node and the match level. Returns an error if tree is not the root.
-func (tree *RouteTree) FindClosestMatchingNodeOLD(targetPath string, targetMethod router.Method) (*RouteTree, MatchLevel, error) {
+func (tree *RouteTree) FindClosestMatchingNodeOLD(targetPath string, targetMethod string) (*RouteTree, MatchLevel, error) {
 	if !tree.IsRoot() {
 		return nil, NoMatch, errors.New("FindClosestMatchingNode called by non-root node")
 	}
@@ -346,7 +345,7 @@ func (tree *RouteTree) FindClosestMatchingNodeOLD(targetPath string, targetMetho
 		targetPath = targetPath + "/"
 	}
 
-	var matchAmtHelper = func(tree *RouteTree, path string, method router.Method) MatchLevel {
+	var matchAmtHelper = func(tree *RouteTree, path string, method string) MatchLevel {
 		pathCmp := tree.compareWithPath(path)
 		if method == tree.method {
 			return pathCmp

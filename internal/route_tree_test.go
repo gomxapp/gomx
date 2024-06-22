@@ -2,7 +2,6 @@ package internal
 
 import (
 	"fmt"
-	"github.com/gomxapp/gomx/pkg/router"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -27,14 +26,14 @@ func ExpectEqual[T comparable](t *testing.T, actual T, expected T) {
 }
 
 func makeMockNode(name string) *RouteTree {
-	return createNode(name, router.GET,
+	return createNode(name, http.MethodGet,
 		http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
 			log.Println("Handler for " + name)
 		}), nil)
 }
 
 func makeMockWildNode(name string) *RouteTree {
-	return createNode(name, router.GET,
+	return createNode(name, http.MethodGet,
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			log.Println("Handler for " + name)
 			wildData := r.PathValue(strings.Trim(name, "{}"))
@@ -44,7 +43,7 @@ func makeMockWildNode(name string) *RouteTree {
 }
 
 func makeMockNotFoundHandlerNode(name string) *RouteTree {
-	return createNode(name, router.GET,
+	return createNode(name, http.MethodGet,
 		http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
 			log.Println("Handler for " + name)
 		}), http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -86,14 +85,14 @@ func TestMain(m *testing.M) {
 
 func TestRouteTree(t *testing.T) {
 	var incomingRequestPath string
-	var incomingRequestMethod router.Method
+	var incomingRequestMethod string
 	var mockRequest *http.Request
 	var mockWriter *httptest.ResponseRecorder
 
 	// ------------- TEST BASIC ROUTING
 	t.Run("test basic routing", func(t *testing.T) {
 		incomingRequestPath = "/a/b/c"
-		incomingRequestMethod = router.GET
+		incomingRequestMethod = http.MethodGet
 		mockRequest = httptest.NewRequest(http.MethodGet, incomingRequestPath, nil)
 		t.Log("Testing path: " + incomingRequestPath)
 
@@ -106,7 +105,7 @@ func TestRouteTree(t *testing.T) {
 		closestNode.ServeHTTP(nil, mockRequest)
 
 		incomingRequestPath = "/"
-		incomingRequestMethod = router.GET
+		incomingRequestMethod = http.MethodGet
 		mockRequest = httptest.NewRequest(http.MethodGet, incomingRequestPath, nil)
 		t.Log("Testing path: " + incomingRequestPath)
 
@@ -123,7 +122,7 @@ func TestRouteTree(t *testing.T) {
 	t.Run("test wildcard routes", func(t *testing.T) {
 		wildData := "test"
 		incomingRequestPath = "/e/" + wildData
-		incomingRequestMethod = router.GET
+		incomingRequestMethod = http.MethodGet
 		mockRequest = httptest.NewRequest(http.MethodGet, incomingRequestPath, nil)
 		t.Log("Testing path: " + incomingRequestPath)
 
@@ -139,7 +138,7 @@ func TestRouteTree(t *testing.T) {
 	// ------------- TEST NOT FOUND HANDLING
 	t.Run("test not found handling", func(t *testing.T) {
 		incomingRequestPath = "/a/b/FAKEPATH"
-		incomingRequestMethod = router.GET
+		incomingRequestMethod = http.MethodGet
 		mockWriter = httptest.NewRecorder()
 		mockRequest = httptest.NewRequest(string(incomingRequestMethod), incomingRequestPath, nil)
 		t.Log("Testing path: " + incomingRequestPath)
@@ -154,7 +153,7 @@ func TestRouteTree(t *testing.T) {
 		ExpectEqual(t, mockWriter.Body.String(), "a")
 
 		incomingRequestPath = "/a/b/c/d/asdf/asdf"
-		incomingRequestMethod = router.GET
+		incomingRequestMethod = http.MethodGet
 		mockWriter = httptest.NewRecorder()
 		mockRequest = httptest.NewRequest(string(incomingRequestMethod), incomingRequestPath, nil)
 		t.Log("Testing path: " + incomingRequestPath)
