@@ -8,7 +8,10 @@ import (
 )
 
 func main() {
+	sameDir := flag.Bool("same-dir", false, "create project in current directory")
 	flag.Parse()
+
+	println(*sameDir)
 
 	if flag.Arg(0) == "new" {
 		if len(flag.Args()) < 2 {
@@ -16,7 +19,7 @@ func main() {
 			fmt.Println("Example: gomx new <app_name>")
 			return
 		}
-		err := initGomxApp(flag.Arg(1))
+		err := newApp(flag.Arg(1))
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -24,7 +27,7 @@ func main() {
 	}
 }
 
-func initGomxApp(appName string) error {
+func newApp(appName string) error {
 	fmt.Println("Creating new GOMX app with name: " + appName)
 
 	err := os.Mkdir(appName, 0775)
