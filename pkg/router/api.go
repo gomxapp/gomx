@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/winstonco/gomx/config"
-	"github.com/winstonco/gomx/util"
+	"github.com/gomxapp/gomx/internal/config"
+	"github.com/gomxapp/gomx/internal/util"
 	"html/template"
 	"log"
 	"net/http"
@@ -22,7 +22,7 @@ var registerFuncs []ApiRegisterFunc
 func (router *Router) initApi() {
 	for _, registerFunc := range registerFuncs {
 		path, method, handler := registerFunc(router)
-		_, err := router.RouteTree.Tree.AddRelativeChild(path, method, handler, nil)
+		_, err := router.routeTree.Tree.AddRelativeChild(path, method, handler, nil)
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -80,7 +80,7 @@ func ReturnGoHTML(w http.ResponseWriter, htmlString string, data any) error {
 		return err
 	}
 	w.Header().Set("Content-Type", "text/html")
-	err = t.Execute(w, nil)
+	err = t.Execute(w, data)
 	if err != nil {
 		return err
 	}

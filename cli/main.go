@@ -54,7 +54,7 @@ func newApp(appName string) error {
 		`package main
 
 import (
-	"github.com/winstonco/gomx/server"
+	"github.com/gomxapp/gomx/server"
 	// _ "new_gomx_app/app/api"
 )
 
