@@ -1,17 +1,22 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"log"
+	"net/http"
+	"net/url"
 	"os"
+	"text/template"
 )
 
-func main() {
-	sameDir := flag.Bool("same-dir", false, "create project in current directory")
-	flag.Parse()
+var sameDir *bool
 
-	println(*sameDir)
+func main() {
+	sameDir = flag.Bool("same-dir", false, "create project in current directory")
+	flag.Parse()
 
 	if flag.Arg(0) == "new" {
 		if len(flag.Args()) < 2 {
@@ -27,72 +32,102 @@ func main() {
 	}
 }
 
+const templateFileServer = "http://localhost:8081"
+
+func getTemplateFile(filename string) (string, error) {
+	templateFileUrl, err := url.JoinPath(templateFileServer, "template", filename)
+	if err != nil {
+		return "", err
+	}
+	res, err := http.Get(templateFileUrl)
+	if err != nil {
+		return "", err
+	}
+	if res.StatusCode != 200 {
+		return "", errors.New(fmt.Sprintf("request was unsuccessful. Status code: %d", res.StatusCode))
+	}
+	v := res.Header.Get("Gomx-Version")
+	if v == "" {
+		return "", errors.New("missing Gomx-Version header. Request was probably unsuccessful")
+	}
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return "", err
+	}
+	return string(body), nil
+}
+
+func createFile(name string, appName string) error {
+	templateBody := fmt.Sprintf(`{{define "appName"}}%s{{end}}`, appName)
+	fileBody, err := getTemplateFile(name)
+	if err != nil {
+		return err
+	}
+	templateBody += fileBody
+	println(templateBody)
+	bodyT, err := template.New("file").Parse(templateBody)
+	if err != nil {
+		return err
+	}
+	file, err := os.Create(name)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	err = bodyT.Execute(file, nil)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func newApp(appName string) error {
+	var rollback = true
+	defer func() {
+		if rollback {
+			fmt.Println("There was an error. Rolling back changes.")
+		}
+	}()
+
+	var err error
 	fmt.Println("Creating new GOMX app with name: " + appName)
 
-	err := os.Mkdir(appName, 0775)
-	if err != nil {
-		return err
-	}
-	err = os.Chdir(appName)
-	if err != nil {
-		return err
-	}
-	createFile := func(name, body string) error {
-		file, err := os.Create(name)
+	if !(*sameDir) {
+		err = os.Mkdir(appName, 0775)
 		if err != nil {
 			return err
 		}
-		defer file.Close()
-		_, err = file.WriteString(body)
+		err = os.Chdir(appName)
 		if err != nil {
 			return err
 		}
-		return nil
+		defer func() {
+			if rollback {
+				err = os.Chdir("..")
+				if err != nil {
+					log.Fatalln(err)
+				}
+				err = os.Remove(appName)
+				if err != nil {
+					log.Fatalln(err)
+				}
+			}
+		}()
 	}
-	err = createFile("main.go",
-		`package main
 
-import (
-	"github.com/gomxapp/gomx/server"
-	// _ "new_gomx_app/app/api"
-)
-
-func main() {
-	server.Start()
-}`)
+	err = createFile("main.go", appName)
 	if err != nil {
 		return err
 	}
-	err = createFile("go.mod",
-		`module `+appName+`
-
-go 1.22`)
+	err = createFile("go.mod", appName)
 	if err != nil {
 		return err
 	}
-	err = createFile("gomx.config.json",
-		`{
-  "appRootDir": "./app",
-  "apiRootDir": "./api",
-  "routesDir": "/routes",
-  "reservedDir": "/_",
-  "baseTemplate": "/index.gohtml"
-}
-`)
+	err = createFile("gomx.config.json", appName)
 	if err != nil {
 		return err
 	}
-	err = createFile("tailwind.config.js",
-		`/** @type {import('tailwindcss').Config} */
-module.exports = {
-  content: ["./**/*.{html,gohtml}"],
-  theme: {
-    extend: {},
-  },
-  plugins: [],
-}
-`)
+	err = createFile("tailwind.config.js", appName)
 	if err != nil {
 		return err
 	}
@@ -104,30 +139,7 @@ module.exports = {
 	if err != nil {
 		return err
 	}
-	err = createFile("index.gohtml",
-		`<!DOCTYPE html>
-<html lang="en">
-
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{{block "title" .}}`+appName+`{{end}}</title>
-    <link rel="stylesheet" href="/static/output.css" />
-    <script src="https://unpkg.com/htmx.org@1.9.6"
-        integrity="sha384-FhXw7b6AlE/jyjlZH5iHa/tTe9EpJ1Y55RjcgPbjeWMskSxZt1v9qkxLJWNJaGni"
-        crossorigin="anonymous"></script>
-</head>
-
-<body>
-	{{block "body" .}}
-	<h1 class="mb-4 text-4xl font-bold leading-none tracking-tight text-gray-900 md:text-5xl lg:text-6xl dark:text-white">
-		Hello World
-	</h1>
-	{{end}}
-</body>
-
-</html>
-`)
+	err = createFile("index.gohtml", appName)
 	if err != nil {
 		return err
 	}
@@ -147,13 +159,10 @@ module.exports = {
 	if err != nil {
 		return err
 	}
-	err = createFile("input.css",
-		`@tailwind base;
-@tailwind components;
-@tailwind utilities;
-`)
+	err = createFile("input.css", appName)
 	if err != nil {
 		return err
 	}
+	rollback = false
 	return nil
 }
