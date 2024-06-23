@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/gomxapp/gomx/internal/config"
+	"github.com/gomxapp/gomx/config"
 	"github.com/gomxapp/gomx/internal/util"
 	"html/template"
 	"log"

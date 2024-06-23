@@ -3,7 +3,7 @@ package gomx
 import (
 	"errors"
 	"fmt"
-	"github.com/gomxapp/gomx/internal/config"
+	"github.com/gomxapp/gomx/config"
 	"net/http"
 )
 
