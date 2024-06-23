@@ -1,14 +1,13 @@
 package internal
 
 import (
+	"github.com/gomxapp/gomx/config"
 	"html/template"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/gomxapp/gomx/internal/config"
 )
 
 type RouteMaker interface {
@@ -40,7 +39,7 @@ func createFileBasedRouteTree() *RouteTree {
 		}
 		entries, err := os.ReadDir(dirPath)
 		if err != nil {
-			log.Fatalln(err)
+			return
 		}
 		var pageFiles []os.DirEntry
 		var subDirs []os.DirEntry
